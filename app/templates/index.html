@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DecisionAI - Multi-Agent Life Decision Simulator</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              500: '#10b981',
+              600: '#059669',
+              dark: '#0b0f19',
+              card: '#111827',
+              border: '#1f2937',
+              accent: '#6366f1'
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-[#0a0d14] text-gray-100 min-h-screen font-sans antialiased selection:bg-indigo-500 selection:text-white pb-16">
+
+  <!-- TOP NAVIGATION -->
+  <header class="sticky top-0 z-40 bg-[#0d121f]/90 backdrop-blur-md border-b border-gray-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+          <i class="fa-solid fa-compass text-white text-lg"></i>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <span class="text-xl font-bold tracking-tight bg-gradient-to-r from-white via-gray-200 to-indigo-300 bg-clip-text text-transparent">DecisionAI</span>
+            <span class="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">Multi-Agent</span>
+          </div>
+          <p class="text-xs text-gray-400 hidden sm:block">Generative AI Personal Decision Simulation & Recommendation System</p>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-3">
+        <!-- Engine Status Badge -->
+        <button id="btnStatusBadge" class="flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-800/80 hover:bg-gray-800 border border-gray-700 transition">
+          <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span id="engineStatusText">AI Agents Ready</span>
+        </button>
+
+        <!-- History Drawer Button -->
+        <button id="btnOpenHistory" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-300 bg-gray-800/80 hover:bg-gray-700 border border-gray-700 transition">
+          <i class="fa-solid fa-clock-rotate-left"></i>
+          <span>History</span>
+          <span id="historyBadge" class="ml-1 px-1.5 py-0.2 rounded-full bg-indigo-600 text-[10px] text-white">0</span>
+        </button>
+
+        <!-- API Key Modal Trigger -->
+        <button id="btnOpenConfig" class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 border border-transparent hover:border-gray-700 transition" title="API Settings">
+          <i class="fa-solid fa-gear"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+
+    <!-- HERO SECTION & PRESETS -->
+    <div class="text-center max-w-3xl mx-auto mb-8">
+      <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-medium mb-3">
+        <i class="fa-solid fa-wand-magic-sparkles"></i>
+        <span>Beyond Chatbots &bull; 3 Autonomous Agents &bull; Future Simulation</span>
+      </div>
+      <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white mb-2">
+        Simulate Your Life Decisions Before You Make Them
+      </h1>
+      <p class="text-gray-400 text-sm sm:text-base">
+        Enter your real-life fork in the road. Our <strong>Situation Analyzer</strong>, <strong>Future Simulator</strong>, and <strong>Decision Critic</strong> agents model divergent timelines, uncover hidden bottlenecks, and score the optimal path.
+      </p>
+
+      <!-- Quick Preset Buttons -->
+      <div class="mt-5 flex flex-wrap items-center justify-center gap-2">
+        <span class="text-xs text-gray-500 font-medium mr-1">Quick Presets:</span>
+        <button class="preset-btn px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-800/80 hover:bg-indigo-600/30 border border-gray-700 hover:border-indigo-500/50 text-gray-300 transition"
+          data-dilemma="I have 6 months. Should I learn Python + AI or Web Development?"
+          data-timeframe="6 months"
+          data-hours="15"
+          data-skills="Basic C++ and Python fundamentals"
+          data-goal="Land a high-growth tech internship"
+          data-risk="Moderate">
+          ⚡ AI vs Web Dev (6 Mos)
+        </button>
+        <button class="preset-btn px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-800/80 hover:bg-indigo-600/30 border border-gray-700 hover:border-indigo-500/50 text-gray-300 transition"
+          data-dilemma="Should I take a fast-paced unpaid startup internship or grind DSA for campus placements?"
+          data-timeframe="4 months"
+          data-hours="20"
+          data-skills="Intermediate DSA in Java, basic Git"
+          data-goal="Secure a high-paying product company placement"
+          data-risk="Aggressive">
+          💼 Startup Internship vs DSA Grind
+        </button>
+        <button class="preset-btn px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-800/80 hover:bg-indigo-600/30 border border-gray-700 hover:border-indigo-500/50 text-gray-300 transition"
+          data-dilemma="Should I work part-time in freelance web design or focus 100% on maintaining a 9.0+ GPA for Master's abroad?"
+          data-timeframe="12 months"
+          data-hours="18"
+          data-skills="HTML/CSS, basic Figma, 8.2 GPA"
+          data-goal="Maximized career optionality & financial runway"
+          data-risk="Conservative">
+          🎓 Freelance vs 9.0 GPA for MS
+        </button>
+      </div>
+    </div>
+
+    <!-- MAIN INPUT & CONFIGURATION CARD -->
+    <div class="bg-[#111827] border border-gray-800 rounded-2xl p-6 sm:p-8 shadow-2xl mb-10 transition hover:border-gray-700/80">
+      <form id="decisionForm" class="space-y-6">
+        <div>
+          <label class="block text-sm font-semibold text-gray-200 mb-2 flex items-center justify-between">
+            <span><i class="fa-solid fa-circle-question text-indigo-400 mr-2"></i>What decision are you facing?</span>
+            <span class="text-xs text-gray-500 font-normal">State the dilemma and the two choices</span>
+          </label>
+          <textarea id="inputDilemma" rows="3" required
+            placeholder="e.g. 'I have 6 months before placements. Should I focus on Python + Generative AI or full-stack Web Development?'"
+            class="w-full bg-[#0d121f] border border-gray-700 rounded-xl px-4 py-3 text-sm sm:text-base text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"></textarea>
+        </div>
+
+        <!-- Constraints Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- Timeframe -->
+          <div>
+            <label class="block text-xs font-medium text-gray-300 mb-1.5">
+              <i class="fa-regular fa-calendar text-gray-400 mr-1"></i> Timeframe Available
+            </label>
+            <select id="inputTimeframe" class="w-full bg-[#0d121f] border border-gray-700 rounded-lg px-3 py-2 text-xs sm:text-sm text-gray-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+              <option value="3 months">3 Months (Sprint)</option>
+              <option value="6 months" selected>6 Months (Semester)</option>
+              <option value="9 months">9 Months (Academic Year)</option>
+              <option value="12 months">12 Months (Long Horizon)</option>
+            </select>
+          </div>
+
+          <!-- Weekly Hours -->
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="text-xs font-medium text-gray-300">
+                <i class="fa-regular fa-clock text-gray-400 mr-1"></i> Weekly Effort
+              </label>
+              <span id="hoursLabel" class="text-xs font-mono font-bold text-indigo-400">15 hrs/wk</span>
+            </div>
+            <input id="inputHours" type="range" min="5" max="40" step="5" value="15" 
+              class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-500" />
+            <div class="flex justify-between text-[10px] text-gray-500 mt-1 font-mono">
+              <span>5h (Casual)</span>
+              <span>20h (Dedicated)</span>
+              <span>40h (Full-time)</span>
+            </div>
+          </div>
+
+          <!-- Current Baseline -->
+          <div>
+            <label class="block text-xs font-medium text-gray-300 mb-1.5">
+              <i class="fa-solid fa-code text-gray-400 mr-1"></i> Current Skills / Baseline
+            </label>
+            <input id="inputSkills" type="text"
+              placeholder="e.g. Basic Python, C++, beginner"
+              value="Basic Python & C++ fundamentals"
+              class="w-full bg-[#0d121f] border border-gray-700 rounded-lg px-3 py-2 text-xs sm:text-sm text-gray-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+          </div>
+
+          <!-- Primary Objective -->
+          <div>
+            <label class="block text-xs font-medium text-gray-300 mb-1.5">
+              <i class="fa-solid fa-bullseye text-gray-400 mr-1"></i> Primary Goal
+            </label>
+            <select id="inputGoal" class="w-full bg-[#0d121f] border border-gray-700 rounded-lg px-3 py-2 text-xs sm:text-sm text-gray-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+              <option value="Secure an internship / placement" selected>Secure an internship / placement</option>
+              <option value="Long-term high salary ceiling">Long-term high salary ceiling</option>
+              <option value="Build and launch own product / startup">Build and launch own product / startup</option>
+              <option value="Academic excellence & Master's prep">Academic excellence & Master's prep</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="pt-2 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div class="flex items-center space-x-2 text-xs text-gray-400">
+            <i class="fa-solid fa-shield-halved text-indigo-400"></i>
+            <span>Orchestrates 3 autonomous LLM agents with multi-criteria scoring</span>
+          </div>
+          <button type="submit" id="btnSimulate"
+            class="w-full sm:w-auto px-8 py-3.5 rounded-xl font-semibold text-white bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 shadow-lg shadow-indigo-600/30 hover:shadow-indigo-600/50 transform active:scale-98 transition flex items-center justify-center space-x-2">
+            <i class="fa-solid fa-bolt"></i>
+            <span>Simulate Futures with AI Agents</span>
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- AGENT PIPELINE PROGRESS INDICATOR (Hidden initially) -->
+    <div id="pipelineContainer" class="hidden mb-12 bg-[#0e1424] border border-indigo-500/30 rounded-2xl p-6 shadow-xl">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center space-x-2">
+          <div class="w-3 h-3 rounded-full bg-indigo-500 animate-ping"></div>
+          <span class="text-sm font-semibold text-indigo-300">Multi-Agent Simulation Pipeline Running</span>
+        </div>
+        <span id="pipelineTimer" class="text-xs font-mono text-gray-400">0s elapsed</span>
+      </div>
+
+      <!-- Agent Steps Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <!-- Agent 1 -->
+        <div id="agentStep1" class="agent-step-card p-4 rounded-xl border border-gray-800 bg-gray-900/60 transition">
+          <div class="flex items-center space-x-3 mb-2">
+            <div class="step-icon w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-xs">1</div>
+            <div>
+              <div class="text-xs font-semibold text-white">Situation Analyzer</div>
+              <div class="step-status text-[10px] text-gray-400">Waiting...</div>
+            </div>
+          </div>
+          <p class="text-[11px] text-gray-500">Deconstructing constraints, baseline, and path definitions</p>
+        </div>
+
+        <!-- Agent 2 -->
+        <div id="agentStep2" class="agent-step-card p-4 rounded-xl border border-gray-800 bg-gray-900/60 transition">
+          <div class="flex items-center space-x-3 mb-2">
+            <div class="step-icon w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-xs">2</div>
+            <div>
+              <div class="text-xs font-semibold text-white">Future Simulator</div>
+              <div class="step-status text-[10px] text-gray-400">Waiting...</div>
+            </div>
+          </div>
+          <p class="text-[11px] text-gray-500">Modeling parallel timelines, milestones & effort</p>
+        </div>
+
+        <!-- Agent 3 -->
+        <div id="agentStep3" class="agent-step-card p-4 rounded-xl border border-gray-800 bg-gray-900/60 transition">
+          <div class="flex items-center space-x-3 mb-2">
+            <div class="step-icon w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-xs">3</div>
+            <div>
+              <div class="text-xs font-semibold text-white">Decision Critic</div>
+              <div class="step-status text-[10px] text-gray-400">Waiting...</div>
+            </div>
+          </div>
+          <p class="text-[11px] text-gray-500">Adversarial stress-testing & risk audit</p>
+        </div>
+
+        <!-- Decision Engine -->
+        <div id="agentStep4" class="agent-step-card p-4 rounded-xl border border-gray-800 bg-gray-900/60 transition">
+          <div class="flex items-center space-x-3 mb-2">
+            <div class="step-icon w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-xs">4</div>
+            <div>
+              <div class="text-xs font-semibold text-white">Decision Engine</div>
+              <div class="step-status text-[10px] text-gray-400">Waiting...</div>
+            </div>
+          </div>
+          <p class="text-[11px] text-gray-500">Scoring metrics & synthesizing verdict</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIMULATION RESULTS CONTAINER (Hidden initially) -->
+    <div id="resultsContainer" class="hidden space-y-10">
+
+      <!-- 1. EXECUTIVE VERDICT BANNER -->
+      <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-emerald-950/80 via-slate-900 to-indigo-950/80 border border-emerald-500/40 p-6 sm:p-8 shadow-2xl">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div class="space-y-3 max-w-3xl">
+            <div class="flex items-center space-x-3">
+              <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+                <i class="fa-solid fa-trophy mr-1"></i> AI Decision Engine Verdict
+              </span>
+              <span id="verdictConfidenceBadge" class="px-3 py-1 rounded-full text-xs font-mono font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">
+                Confidence: 88%
+              </span>
+            </div>
+            <h2 id="verdictTitle" class="text-2xl sm:text-3xl font-extrabold text-white">
+              Recommended: Path B — Full-Stack Web Development
+            </h2>
+            <p id="verdictSummary" class="text-sm sm:text-base text-gray-300 leading-relaxed">
+              Based on your available time, current skills and goal, Path B is recommended.
+            </p>
+          </div>
+
+          <!-- Actions toolbar -->
+          <div class="flex flex-row lg:flex-col gap-2 shrink-0">
+            <button id="btnPrintReport" class="px-4 py-2 rounded-xl text-xs font-semibold bg-gray-800 hover:bg-gray-700 text-white border border-gray-700 transition flex items-center justify-center space-x-2">
+              <i class="fa-solid fa-print"></i>
+              <span>Print / PDF Report</span>
+            </button>
+            <button id="btnCopyReport" class="px-4 py-2 rounded-xl text-xs font-semibold bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 transition flex items-center justify-center space-x-2">
+              <i class="fa-regular fa-copy"></i>
+              <span>Copy Summary</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- The Hybrid Compromise Strategy Box -->
+        <div id="hybridStrategyContainer" class="mt-6 pt-5 border-t border-gray-800/80">
+          <div class="flex items-start space-x-3">
+            <div class="p-2 rounded-lg bg-amber-500/20 text-amber-400 mt-0.5">
+              <i class="fa-solid fa-lightbulb"></i>
+            </div>
+            <div>
+              <div class="text-xs uppercase tracking-wider font-bold text-amber-400">The "Trojan Horse" Hybrid Strategy</div>
+              <p id="hybridStrategyText" class="text-xs sm:text-sm text-gray-300 mt-1 leading-relaxed">
+                Start with Web Dev to secure an internship, then integrate AI models in Month 4-6 to get the best of both worlds.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. QUANTITATIVE DECISION REPORT & RADAR CHART -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <!-- Radar Visualization (5 cols) -->
+        <div class="lg:col-span-5 bg-[#111827] border border-gray-800 rounded-2xl p-6 shadow-xl flex flex-col">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-base font-bold text-white flex items-center">
+                <i class="fa-solid fa-chart-radar text-indigo-400 mr-2"></i>
+                Multi-Dimensional Comparison
+              </h3>
+              <p class="text-xs text-gray-400">Radar evaluation across core decision criteria</p>
+            </div>
+          </div>
+          <div class="relative flex-1 min-h-[300px] flex items-center justify-center">
+            <canvas id="radarChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Metric Scores Matrix (7 cols) -->
+        <div class="lg:col-span-7 bg-[#111827] border border-gray-800 rounded-2xl p-6 shadow-xl">
+          <h3 class="text-base font-bold text-white mb-1 flex items-center">
+            <i class="fa-solid fa-chart-simple text-purple-400 mr-2"></i>
+            Decision Metrics Breakdown
+          </h3>
+          <p class="text-xs text-gray-400 mb-6">Comparative scorecard synthesized by the Decision Engine</p>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Path A Score Card -->
+            <div class="p-4 rounded-xl bg-purple-950/20 border border-purple-800/40 space-y-3">
+              <div class="flex items-center justify-between">
+                <span id="scoreCardTitleA" class="font-bold text-sm text-purple-300">Path A</span>
+                <span id="scoreCardFitA" class="font-mono text-xs px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">78/100 Fit</span>
+              </div>
+              <div class="space-y-2 text-xs">
+                <div>
+                  <div class="flex justify-between text-gray-400 mb-1">
+                    <span>Difficulty:</span>
+                    <span id="scoreDiffA" class="font-mono text-gray-200">8/10</span>
+                  </div>
+                  <div class="h-1.5 w-full bg-gray-800 rounded-full overflow-hidden">
+                    <div id="barDiffA" class="h-full bg-purple-500 rounded-full" style="width: 80%"></div>
+                  </div>
+                </div>
+                <div>
+                  <div class="flex justify-between text-gray-400 mb-1">
+                    <span>Time to Market:</span>
+                    <span id="scoreTimeA" class="font-mono text-gray-200">6 Months</span>
+                  </div>
+                  <div class="h-1.5 w-full bg-gray-800 rounded-full overflow-hidden">
+                    <div id="barTimeA" class="h-full bg-purple-500 rounded-full" style="width: 100%"></div>
+                  </div>
+                </div>
+                <div>
+                  <div class="flex justify-between text-gray-400 mb-1">
+                    <span>Skill Growth:</span>
+                    <span id="scoreGrowthA" class="font-mono text-gray-200">9.2/10</span>
+                  </div>
+                  <div class="h-1.5 w-full bg-gray-800 rounded-full overflow-hidden">
+                    <div id="barGrowthA" class="h-full bg-purple-500 rounded-full" style="width: 92%"></div>
+                  </div>
+                </div>
+                <div>
+                  <div class="flex justify-between text-gray-400 mb-1">
+                    <span>Feasibility Score:</span>
+                    <span id="scoreFeasA" class="font-mono text-gray-200">65/100</span>
+                  </div>
+                  <div class="h-1.5 w-full bg-gray-800 rounded-full overflow-hidden">
+                    <div id="barFeasA" class="h-full bg-purple-500 rounded-full" style="width: 65%"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Path B Score Card -->
+            <div class="p-4 rounded-xl bg-cyan-950/20 border border-cyan-800/40 space-y-3">
+              <div class="flex items-center justify-between">
+                <span id="scoreCardTitleB" class="font-bold text-sm text-cyan-300">Path B</span>
+                <span id="scoreCardFitB" class="font-mono text-xs px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">88/100 Fit</span>
+              </div>
+              <div class="space-y-2 text-xs">
+                <div>
+                  <div class="flex justify-between text-gray-400 mb-1">
+                    <span>Difficulty:</span>
+                    <span id="scoreDiffB" class="font-mono text-gray-200">6/10</span>
+                  </div>
+                  <div class="h-1.5 w-full bg-gray-800 rounded-full overflow-hidden">
+                    <div id="barDiffB" class="h-full bg-cyan-500 rounded-full" style="width: 60%"></div>
+                  </div>
+                </div>
+                <div>
+                  <div class="flex justify-between text-gray-400 mb-1">
+                    <span>Time to Market:</span>
+                    <span id="scoreTimeB" class="font-mono text-gray-200">4 Months</span>
+                  </div>
+                  <div class="h-1.5 w-full bg-gray-800 rounded-full overflow-hidden">
+                    <div id="barTimeB" class="h-full bg-cyan-500 rounded-full" style="width: 65%"></div>
+                  </div>
+                </div>
+                <div>
+                  <div class="flex justify-between text-gray-400 mb-1">
+                    <span>Skill Growth:</span>
+                    <span id="scoreGrowthB" class="font-mono text-gray-200">8.0/10</span>
+                  </div>
+                  <div class="h-1.5 w-full bg-gray-800 rounded-full overflow-hidden">
+                    <div id="barGrowthB" class="h-full bg-cyan-500 rounded-full" style="width: 80%"></div>
+                  </div>
+                </div>
+                <div>
+                  <div class="flex justify-between text-gray-400 mb-1">
+                    <span>Feasibility Score:</span>
+                    <span id="scoreFeasB" class="font-mono text-gray-200">90/100</span>
+                  </div>
+                  <div class="h-1.5 w-full bg-gray-800 rounded-full overflow-hidden">
+                    <div id="barFeasB" class="h-full bg-cyan-500 rounded-full" style="width: 90%"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Counter-argument Defense -->
+          <div class="mt-4 p-3.5 rounded-xl bg-gray-900/80 border border-gray-800 text-xs text-gray-400 leading-relaxed">
+            <span class="font-semibold text-gray-300">Why not the alternative right now? </span>
+            <span id="counterArgumentText"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. SIDE-BY-SIDE FUTURE SIMULATION MATRIX (Agent 2 Output) -->
+      <div>
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-xl font-bold text-white flex items-center">
+              <i class="fa-solid fa-code-branch text-pink-400 mr-2"></i>
+              Parallel Futures Simulation
+            </h3>
+            <p class="text-xs text-gray-400">Detailed trajectory projections generated by Future Simulator Agent</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Path A Card -->
+          <div id="cardPathA" class="bg-[#111827] border border-purple-900/50 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-purple-600/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
+            
+            <div class="flex items-center justify-between mb-3">
+              <span class="px-2.5 py-1 rounded-md text-xs font-mono font-semibold uppercase bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                Option A
+              </span>
+              <span id="pathAEffort" class="text-xs font-mono text-purple-400 font-semibold">
+                18 hrs/week
+              </span>
+            </div>
+
+            <h4 id="pathATitle" class="text-xl font-bold text-white mb-1">Python + AI Specialist</h4>
+            <p id="pathATagline" class="text-xs text-purple-300/80 italic mb-4">High-ceiling, math-rigorous track</p>
+
+            <div class="space-y-4 text-xs">
+              <div>
+                <span class="text-gray-400 font-semibold uppercase tracking-wider text-[10px] block mb-1">Trajectory Narrative</span>
+                <p id="pathANarrative" class="text-gray-300 leading-relaxed"></p>
+              </div>
+
+              <div>
+                <span class="text-gray-400 font-semibold uppercase tracking-wider text-[10px] block mb-1.5">Core Skills to Master</span>
+                <ul id="pathASkills" class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-gray-300"></ul>
+              </div>
+
+              <div>
+                <span class="text-gray-400 font-semibold uppercase tracking-wider text-[10px] block mb-1.5">Milestone Portfolio Projects</span>
+                <div id="pathAProjects" class="space-y-2"></div>
+              </div>
+
+              <div>
+                <span class="text-gray-400 font-semibold uppercase tracking-wider text-[10px] block mb-1">Expected Difficulties</span>
+                <ul id="pathADifficulties" class="space-y-1 text-red-300/90 list-disc list-inside"></ul>
+              </div>
+
+              <div class="pt-2 border-t border-gray-800 flex items-center justify-between">
+                <div>
+                  <span class="text-[10px] text-gray-500 uppercase block">Internship Readiness</span>
+                  <span id="pathAReadiness" class="font-medium text-gray-300">Moderate</span>
+                </div>
+                <div>
+                  <span class="text-[10px] text-gray-500 uppercase block">Timeline to Ready</span>
+                  <span id="pathATimeline" class="font-medium text-gray-300 font-mono">6 Months</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Path B Card -->
+          <div id="cardPathB" class="bg-[#111827] border border-cyan-900/50 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-cyan-600/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
+
+            <div class="flex items-center justify-between mb-3">
+              <span class="px-2.5 py-1 rounded-md text-xs font-mono font-semibold uppercase bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                Option B
+              </span>
+              <span id="pathBEffort" class="text-xs font-mono text-cyan-400 font-semibold">
+                14 hrs/week
+              </span>
+            </div>
+
+            <h4 id="pathBTitle" class="text-xl font-bold text-white mb-1">Full-Stack Web Development</h4>
+            <p id="pathBTagline" class="text-xs text-cyan-300/80 italic mb-4">Immediate marketability & tangible builds</p>
+
+            <div class="space-y-4 text-xs">
+              <div>
+                <span class="text-gray-400 font-semibold uppercase tracking-wider text-[10px] block mb-1">Trajectory Narrative</span>
+                <p id="pathBNarrative" class="text-gray-300 leading-relaxed"></p>
+              </div>
+
+              <div>
+                <span class="text-gray-400 font-semibold uppercase tracking-wider text-[10px] block mb-1.5">Core Skills to Master</span>
+                <ul id="pathBSkills" class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-gray-300"></ul>
+              </div>
+
+              <div>
+                <span class="text-gray-400 font-semibold uppercase tracking-wider text-[10px] block mb-1.5">Milestone Portfolio Projects</span>
+                <div id="pathBProjects" class="space-y-2"></div>
+              </div>
+
+              <div>
+                <span class="text-gray-400 font-semibold uppercase tracking-wider text-[10px] block mb-1">Expected Difficulties</span>
+                <ul id="pathBDifficulties" class="space-y-1 text-red-300/90 list-disc list-inside"></ul>
+              </div>
+
+              <div class="pt-2 border-t border-gray-800 flex items-center justify-between">
+                <div>
+                  <span class="text-[10px] text-gray-500 uppercase block">Internship Readiness</span>
+                  <span id="pathBReadiness" class="font-medium text-gray-300">Very High</span>
+                </div>
+                <div>
+                  <span class="text-[10px] text-gray-500 uppercase block">Timeline to Ready</span>
+                  <span id="pathBTimeline" class="font-medium text-gray-300 font-mono">4 Months</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. ADVERSARIAL RISK AUDIT (Decision Critic Agent Output) -->
+      <div class="bg-[#111827] border border-rose-900/40 rounded-2xl p-6 sm:p-8 shadow-xl">
+        <div class="flex items-center space-x-3 mb-4">
+          <div class="h-9 w-9 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center">
+            <i class="fa-solid fa-triangle-exclamation text-lg"></i>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold text-white">Decision Critic: Adversarial Stress Test</h3>
+            <p class="text-xs text-gray-400">Devil's Advocate audit challenging assumptions, blind spots, and burnout probability</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+          <!-- Path A Critic -->
+          <div class="p-4 rounded-xl bg-rose-950/20 border border-rose-900/30 space-y-3">
+            <div class="flex items-center justify-between">
+              <span id="criticTitleA" class="font-bold text-sm text-rose-300">Critique: Path A</span>
+              <span id="criticBurnoutA" class="text-xs font-mono px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30">Burnout Risk: 8/10</span>
+            </div>
+            <div class="space-y-2 text-xs">
+              <div>
+                <span class="text-gray-400 font-semibold block mb-1">Blind Spots & Traps:</span>
+                <ul id="criticBlindSpotsA" class="space-y-1 text-gray-300 list-disc list-inside"></ul>
+              </div>
+              <div>
+                <span class="text-gray-400 font-semibold block mb-1">Market Reality:</span>
+                <p id="criticMarketA" class="text-gray-300 leading-relaxed"></p>
+              </div>
+              <div>
+                <span class="text-emerald-400 font-semibold block mb-1">How to De-Risk (Mitigation):</span>
+                <p id="criticMitigationA" class="text-gray-300 leading-relaxed"></p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Path B Critic -->
+          <div class="p-4 rounded-xl bg-amber-950/20 border border-amber-900/30 space-y-3">
+            <div class="flex items-center justify-between">
+              <span id="criticTitleB" class="font-bold text-sm text-amber-300">Critique: Path B</span>
+              <span id="criticBurnoutB" class="text-xs font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">Burnout Risk: 5/10</span>
+            </div>
+            <div class="space-y-2 text-xs">
+              <div>
+                <span class="text-gray-400 font-semibold block mb-1">Blind Spots & Traps:</span>
+                <ul id="criticBlindSpotsB" class="space-y-1 text-gray-300 list-disc list-inside"></ul>
+              </div>
+              <div>
+                <span class="text-gray-400 font-semibold block mb-1">Market Reality:</span>
+                <p id="criticMarketB" class="text-gray-300 leading-relaxed"></p>
+              </div>
+              <div>
+                <span class="text-emerald-400 font-semibold block mb-1">How to De-Risk (Mitigation):</span>
+                <p id="criticMitigationB" class="text-gray-300 leading-relaxed"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4 p-3 rounded-lg bg-gray-900 border border-gray-800 text-xs text-gray-300 leading-relaxed">
+          <strong class="text-gray-200">The Bottom-Line Trade-Off: </strong>
+          <span id="criticTradeoffVerdict"></span>
+        </div>
+      </div>
+
+      <!-- 5. ACTIONABLE MONTH-BY-MONTH ROADMAP -->
+      <div class="bg-[#111827] border border-gray-800 rounded-2xl p-6 sm:p-8 shadow-xl">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h3 class="text-lg font-bold text-white flex items-center">
+              <i class="fa-solid fa-timeline text-indigo-400 mr-2"></i>
+              Action Execution Roadmap
+            </h3>
+            <p class="text-xs text-gray-400">Step-by-step month-by-month implementation plan for the recommended path</p>
+          </div>
+        </div>
+
+        <div id="roadmapTimeline" class="space-y-4">
+          <!-- Populated by JavaScript -->
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- HISTORY DRAWER MODAL -->
+  <div id="historyDrawer" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex justify-end">
+    <div class="w-full max-w-md bg-[#111827] border-l border-gray-800 h-full p-6 flex flex-col shadow-2xl">
+      <div class="flex items-center justify-between pb-4 border-b border-gray-800">
+        <div class="flex items-center space-x-2">
+          <i class="fa-solid fa-clock-rotate-left text-indigo-400"></i>
+          <h3 class="font-bold text-white text-base">Simulation History</h3>
+        </div>
+        <button id="btnCloseHistory" class="text-gray-400 hover:text-white p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div id="historyList" class="flex-1 overflow-y-auto py-4 space-y-3">
+        <!-- Dynamically rendered -->
+        <p class="text-xs text-gray-500 text-center py-8">No saved simulations yet.</p>
+      </div>
+
+      <div class="pt-4 border-t border-gray-800 text-xs text-gray-500 text-center">
+        Saved locally in SQLite database
+      </div>
+    </div>
+  </div>
+
+  <!-- API KEY / SETTINGS MODAL -->
+  <div id="configModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="w-full max-w-md bg-[#111827] border border-gray-800 rounded-2xl p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-gray-800">
+        <div class="flex items-center space-x-2">
+          <i class="fa-solid fa-sliders text-indigo-400"></i>
+          <h3 class="font-bold text-white text-base">Engine Settings</h3>
+        </div>
+        <button id="btnCloseConfig" class="text-gray-400 hover:text-white p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-gray-300 mb-1">
+            Google Gemini API Key (Optional)
+          </label>
+          <input id="inputApiKey" type="password" placeholder="AIzaSy..."
+            class="w-full bg-[#0d121f] border border-gray-700 rounded-lg px-3 py-2 text-xs text-gray-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none font-mono" />
+          <p class="text-[11px] text-gray-400 mt-1">
+            If left blank, the application automatically uses the built-in high-fidelity simulation engine (100% offline reliable for presentations & viva).
+          </p>
+        </div>
+      </div>
+
+      <div class="pt-3 flex justify-end space-x-2">
+        <button id="btnSaveConfig" class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition">
+          Save Settings
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/main.js"></script>
+</body>
+</html>
+
