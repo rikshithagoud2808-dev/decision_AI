@@ -19,12 +19,25 @@ def index():
 @main_bp.route("/api/status", methods=["GET"])
 def get_status():
     """Returns the current operational status of the AI engine."""
+    provider = engine.llm.get_active_provider()
     has_key = engine.llm.has_valid_key()
+    
+    if provider == "openai":
+        mode = "OpenAI Live API (GPT-4o-mini)"
+        model = engine.llm.openai_model
+    elif provider == "gemini":
+        mode = "Gemini Live API (1.5 Flash)"
+        model = engine.llm.gemini_model
+    else:
+        mode = "High-Fidelity Simulation Engine (Offline Ready)"
+        model = "heuristic-multi-agent"
+
     return jsonify({
         "status": "online",
-        "mode": "Gemini Live API" if has_key else "High-Fidelity Simulation Engine (Offline Ready)",
+        "provider": provider,
+        "mode": mode,
         "has_api_key": has_key,
-        "model": engine.llm.model
+        "model": model
     })
 
 @main_bp.route("/api/simulate", methods=["POST"])
@@ -93,15 +106,25 @@ def delete_history_item(sim_id: int):
 
 @main_bp.route("/api/configure_key", methods=["POST"])
 def configure_key():
-    """Updates the Gemini API key in runtime."""
+    """Updates the OpenAI or Gemini API key in runtime."""
     try:
         data = request.get_json() or {}
-        new_key = data.get("api_key", "").strip()
-        engine.llm.api_key = new_key
+        openai_key = data.get("openai_key", "").strip()
+        gemini_key = data.get("gemini_key", "").strip()
+
+        if openai_key:
+            engine.llm.openai_key = openai_key
+        if gemini_key:
+            engine.llm.gemini_key = gemini_key
+            
+        provider = engine.llm.get_active_provider()
+        has_key = engine.llm.has_valid_key()
+
         return jsonify({
             "success": True,
-            "has_api_key": engine.llm.has_valid_key(),
-            "mode": "Gemini Live API" if engine.llm.has_valid_key() else "Simulation Engine (Offline Ready)"
+            "has_api_key": has_key,
+            "provider": provider,
+            "mode": f"{provider.upper()} Live API" if has_key else "Simulation Engine (Offline Ready)"
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500

@@ -7,24 +7,73 @@ from config import Config
 logger = logging.getLogger("decision_ai.llm")
 
 class LLMClient:
-    def __init__(self, api_key: str = None):
-        self.api_key = (api_key or Config.GEMINI_API_KEY or "").strip()
-        # Default Gemini model endpoint
-        self.model = "gemini-1.5-flash"
-        self.endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent"
+    def __init__(self, openai_key: str = None, gemini_key: str = None):
+        self.openai_key = (openai_key or Config.OPENAI_API_KEY or "").strip()
+        self.gemini_key = (gemini_key or Config.GEMINI_API_KEY or "").strip()
+
+        # Model settings
+        self.openai_model = "gpt-4o-mini"
+        self.openai_endpoint = "https://api.openai.com/v1/chat/completions"
+        self.gemini_model = "gemini-1.5-flash"
+        self.gemini_endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/{self.gemini_model}:generateContent"
+
+    def get_active_provider(self) -> str:
+        if bool(self.openai_key and len(self.openai_key) > 10):
+            return "openai"
+        elif bool(self.gemini_key and len(self.gemini_key) > 10):
+            return "gemini"
+        return "simulation"
 
     def has_valid_key(self) -> bool:
-        return bool(self.api_key and len(self.api_key) > 10)
+        return self.get_active_provider() in ("openai", "gemini")
 
     def generate_json(self, system_instruction: str, user_prompt: str) -> dict:
         """
-        Calls Gemini API with instructions to return valid JSON.
+        Calls the active LLM provider (OpenAI or Gemini) instructing it to return valid JSON.
         If no API key is provided or the network call fails, falls back gracefully.
         """
-        if not self.has_valid_key():
-            logger.info("No Gemini API key provided. Using built-in simulation engine fallback.")
+        provider = self.get_active_provider()
+
+        if provider == "openai":
+            return self._call_openai(system_instruction, user_prompt)
+        elif provider == "gemini":
+            return self._call_gemini(system_instruction, user_prompt)
+        else:
+            logger.info("No valid API key provided. Using built-in simulation engine fallback.")
             return None
 
+    def _call_openai(self, system_instruction: str, user_prompt: str) -> dict:
+        """Calls OpenAI Chat Completions API with structured JSON output."""
+        try:
+            headers = {
+                "Authorization": f"Bearer {self.openai_key}",
+                "Content-Type": "application/json"
+            }
+            payload = {
+                "model": self.openai_model,
+                "messages": [
+                    {"role": "system", "content": system_instruction},
+                    {"role": "user", "content": f"{user_prompt}\n\nIMPORTANT: Return valid JSON only."}
+                ],
+                "response_format": {"type": "json_object"},
+                "temperature": 0.3
+            }
+
+            response = requests.post(self.openai_endpoint, headers=headers, json=payload, timeout=25)
+            if response.status_code != 200:
+                logger.warning(f"OpenAI API error {response.status_code}: {response.text}")
+                return None
+
+            data = response.json()
+            content = data["choices"][0]["message"]["content"]
+            return json.loads(content)
+
+        except Exception as e:
+            logger.error(f"Error calling OpenAI API: {e}")
+            return None
+
+    def _call_gemini(self, system_instruction: str, user_prompt: str) -> dict:
+        """Calls Google Gemini API with JSON output instruction."""
         try:
             headers = {"Content-Type": "application/json"}
             payload = {
@@ -32,7 +81,7 @@ class LLMClient:
                     {
                         "role": "user",
                         "parts": [
-                            {"text": f"System Instruction:\n{system_instruction}\n\nTask:\n{user_prompt}\n\nIMPORTANT: Respond ONLY with a valid JSON object. Do not include markdown code block formatting like ```json ... ``` outside the object if possible, or provide raw JSON."}
+                            {"text": f"System Instruction:\n{system_instruction}\n\nTask:\n{user_prompt}\n\nIMPORTANT: Respond ONLY with a valid JSON object."}
                         ]
                     }
                 ],
@@ -43,11 +92,10 @@ class LLMClient:
                 }
             }
 
-            url = f"{self.endpoint}?key={self.api_key}"
+            url = f"{self.gemini_endpoint}?key={self.gemini_key}"
             response = requests.post(url, headers=headers, json=payload, timeout=25)
-            
             if response.status_code != 200:
-                logger.warning(f"Gemini API returned status {response.status_code}: {response.text}")
+                logger.warning(f"Gemini API error {response.status_code}: {response.text}")
                 return None
 
             data = response.json()
@@ -59,7 +107,7 @@ class LLMClient:
             return self._clean_and_parse_json(raw_text)
 
         except Exception as e:
-            logger.error(f"Error communicating with Gemini API: {e}")
+            logger.error(f"Error calling Gemini API: {e}")
             return None
 
     def _clean_and_parse_json(self, text: str) -> dict:
@@ -76,4 +124,3 @@ class LLMClient:
         except Exception as e:
             logger.error(f"Failed to parse LLM JSON output: {e}\nRaw: {text[:200]}")
             return None
-

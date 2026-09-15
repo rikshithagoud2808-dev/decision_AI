@@ -47,7 +47,9 @@ async function checkEngineStatus() {
     const res = await fetch("/api/status");
     const data = await res.json();
     const statusText = document.getElementById("engineStatusText");
-    if (data.has_api_key) {
+    if (data.provider === "openai") {
+      statusText.textContent = "OpenAI Live API (GPT-4o)";
+    } else if (data.provider === "gemini") {
       statusText.textContent = "Gemini Live API";
     } else {
       statusText.textContent = "Offline Simulation Ready";
@@ -455,18 +457,19 @@ function initModalsAndDrawers() {
 
   // Save Settings
   document.getElementById("btnSaveConfig").addEventListener("click", async () => {
-    const key = document.getElementById("inputApiKey").value.trim();
+    const openaiKey = document.getElementById("inputOpenAiKey")?.value.trim() || "";
+    const geminiKey = document.getElementById("inputApiKey")?.value.trim() || "";
     try {
       const res = await fetch("/api/configure_key", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ api_key: key })
+        body: JSON.stringify({ openai_key: openaiKey, gemini_key: geminiKey })
       });
       const data = await res.json();
       if (data.success) {
         modal.classList.add("hidden");
         checkEngineStatus();
-        alert("Settings updated successfully!");
+        alert(`Settings updated! Active Mode: ${data.mode}`);
       }
     } catch (e) {
       alert("Error saving settings: " + e.message);
