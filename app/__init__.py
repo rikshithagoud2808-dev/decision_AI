@@ -21,3 +21,7 @@ def create_app(config_class=Config):
 
     return app
 
+# Expose default application instance
+app = create_app()
+
+

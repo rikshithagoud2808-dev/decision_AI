@@ -111,12 +111,18 @@ def configure_key():
         data = request.get_json() or {}
         openai_key = data.get("openai_key", "").strip()
         gemini_key = data.get("gemini_key", "").strip()
+        new_key = data.get("api_key", "").strip()
 
         if openai_key:
             engine.llm.openai_key = openai_key
+        elif new_key and new_key.startswith("sk-"):
+            engine.llm.openai_key = new_key
+
         if gemini_key:
             engine.llm.gemini_key = gemini_key
-            
+        elif new_key and new_key.startswith("AIza"):
+            engine.llm.gemini_key = new_key
+
         provider = engine.llm.get_active_provider()
         has_key = engine.llm.has_valid_key()
 

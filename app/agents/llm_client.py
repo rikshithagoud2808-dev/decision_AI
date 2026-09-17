@@ -94,6 +94,7 @@ class LLMClient:
 
             url = f"{self.gemini_endpoint}?key={self.gemini_key}"
             response = requests.post(url, headers=headers, json=payload, timeout=25)
+            
             if response.status_code != 200:
                 logger.warning(f"Gemini API error {response.status_code}: {response.text}")
                 return None
